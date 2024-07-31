@@ -4,7 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.util.simpletimetracker.core.extension.addOrRemove
+import com.example.util.simpletimetracker.domain.extension.addOrRemove
 import com.example.util.simpletimetracker.core.extension.set
 import com.example.util.simpletimetracker.core.extension.toModel
 import com.example.util.simpletimetracker.core.mapper.TimeMapper
@@ -238,6 +238,12 @@ class RecordsFilterViewModel @Inject constructor(
     }
 
     fun onDurationSet(duration: Long, tag: String?) {
+        val requestedTags = listOf(
+            DURATION_FROM_TAG,
+            DURATION_TO_TAG,
+        )
+        if (tag !in requestedTags) return
+
         val durationInMillis = duration * 1000
         var (rangeStart, rangeEnd) = filters.getDuration() ?: defaultDurationRange
 
@@ -566,12 +572,16 @@ class RecordsFilterViewModel @Inject constructor(
         when (fieldType) {
             RecordsFilterRangeViewData.FieldType.TIME_STARTED -> DurationDialogParams(
                 tag = DURATION_FROM_TAG,
-                duration = range.timeStarted / 1000,
+                value = DurationDialogParams.Value.Duration(
+                    duration = range.timeStarted / 1000,
+                ),
                 hideDisableButton = true,
             )
             RecordsFilterRangeViewData.FieldType.TIME_ENDED -> DurationDialogParams(
                 tag = DURATION_TO_TAG,
-                duration = range.timeEnded / 1000,
+                value = DurationDialogParams.Value.Duration(
+                    duration = range.timeEnded / 1000,
+                ),
                 hideDisableButton = true,
             )
         }.let(router::navigate)

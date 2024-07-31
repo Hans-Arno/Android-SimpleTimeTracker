@@ -13,6 +13,7 @@ import com.example.util.simpletimetracker.core.mapper.TimeMapper
 import com.example.util.simpletimetracker.core.model.NavigationTab
 import com.example.util.simpletimetracker.domain.extension.orZero
 import com.example.util.simpletimetracker.domain.interactor.PrefsInteractor
+import com.example.util.simpletimetracker.domain.interactor.RecordsUpdateInteractor
 import com.example.util.simpletimetracker.feature_base_adapter.ViewHolderType
 import com.example.util.simpletimetracker.feature_base_adapter.loader.LoaderViewData
 import com.example.util.simpletimetracker.feature_base_adapter.record.RecordViewData
@@ -25,13 +26,14 @@ import com.example.util.simpletimetracker.navigation.params.screen.ChangeRecordF
 import com.example.util.simpletimetracker.navigation.params.screen.ChangeRecordParams
 import com.example.util.simpletimetracker.navigation.params.screen.ChangeRunningRecordFromMainParams
 import com.example.util.simpletimetracker.navigation.params.screen.ChangeRunningRecordParams
+import com.example.util.simpletimetracker.navigation.params.screen.RecordQuickActionsParams
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class RecordsViewModel @Inject constructor(
@@ -39,6 +41,7 @@ class RecordsViewModel @Inject constructor(
     private val recordsViewDataInteractor: RecordsViewDataInteractor,
     private val prefsInteractor: PrefsInteractor,
     private val timeMapper: TimeMapper,
+    private val recordsUpdateInteractor: RecordsUpdateInteractor,
 ) : ViewModel() {
 
     var extra: RecordsExtra? = null
@@ -56,10 +59,21 @@ class RecordsViewModel @Inject constructor(
     private var timerJob: Job? = null
     private val shift: Int get() = extra?.shift.orZero()
 
+    init {
+        subscribeToUpdates()
+    }
+
     fun onCalendarClick(item: ViewHolderType) {
         when (item) {
             is RecordViewData -> onRecordClick(item)
             is RunningRecordViewData -> onRunningRecordClick(item)
+        }
+    }
+
+    fun onCalendarLongClick(item: ViewHolderType) {
+        when (item) {
+            is RecordViewData -> onRecordLongClick(item)
+            is RunningRecordViewData -> onRunningRecordLongClick(item)
         }
     }
 
@@ -145,6 +159,47 @@ class RecordsViewModel @Inject constructor(
         )
     }
 
+    @Suppress("UNUSED_PARAMETER")
+    fun onRunningRecordLongClick(
+        item: RunningRecordViewData,
+        sharedElements: Pair<Any, String>? = null,
+    ) {
+        RecordQuickActionsParams(
+            type = RecordQuickActionsParams.Type.RecordRunning(
+                id = item.id,
+            ),
+            preview = RecordQuickActionsParams.Preview(
+                name = item.name,
+                iconId = item.iconId.toParams(),
+                color = item.color,
+            ),
+        ).let(router::navigate)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun onRecordLongClick(
+        item: RecordViewData,
+        sharedElements: Pair<Any, String>? = null,
+    ) {
+        val type = when (item) {
+            is RecordViewData.Tracked -> RecordQuickActionsParams.Type.RecordTracked(
+                id = item.id,
+            )
+            is RecordViewData.Untracked -> RecordQuickActionsParams.Type.RecordUntracked(
+                timeStarted = item.timeStartedTimestamp,
+                timeEnded = item.timeEndedTimestamp,
+            )
+        }
+        RecordQuickActionsParams(
+            type = type,
+            preview = RecordQuickActionsParams.Preview(
+                name = item.name,
+                iconId = item.iconId.toParams(),
+                color = item.color,
+            ),
+        ).let(router::navigate)
+    }
+
     fun onVisible() {
         isVisible = true
         if (shift == 0) {
@@ -166,6 +221,12 @@ class RecordsViewModel @Inject constructor(
     fun onTabReselected(tab: NavigationTab?) {
         if (isVisible && tab is NavigationTab.Records) {
             resetScreen.set(Unit)
+        }
+    }
+
+    private fun subscribeToUpdates() = viewModelScope.launch {
+        recordsUpdateInteractor.dataUpdated.collect {
+            if (isVisible) updateRecords()
         }
     }
 

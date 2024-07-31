@@ -20,10 +20,12 @@ interface PrefsRepo {
     var statisticsRange: Int
     var statisticsRangeCustomStart: Long
     var statisticsRangeCustomEnd: Long
+    var statisticsRangeLastDays: Int
 
     var statisticsDetailRange: Int
     var statisticsDetailRangeCustomStart: Long
     var statisticsDetailRangeCustomEnd: Long
+    var statisticsDetailRangeLastDays: Int
 
     var keepStatisticsRange: Boolean
 
@@ -37,11 +39,27 @@ interface PrefsRepo {
 
     var showRecordsCalendar: Boolean
 
+    var showCalendarButtonOnRecordsTab: Boolean
+
     var reverseOrderInCalendar: Boolean
 
     var daysInCalendar: Int
 
     var showActivityFilters: Boolean
+
+    var enableRepeatButton: Boolean
+
+    var enablePomodoroMode: Boolean
+
+    var pomodoroModeStartedTimestamp: Long // in milliseconds, 0 - disabled
+
+    var pomodoroFocusTime: Long // in seconds, 0 - disabled
+
+    var pomodoroBreakTime: Long // in seconds, 0 - disabled
+
+    var pomodoroLongBreakTime: Long // in seconds, 0 - disabled
+
+    var pomodoroPeriodsUntilLongBreak: Long // 0 - disabled
 
     var allowMultipleActivityFilters: Boolean
 
@@ -99,6 +117,8 @@ interface PrefsRepo {
 
     var recordTagSelectionExcludeActivities: Set<String>
 
+    var autostartPomodoroActivities: Set<String>
+
     var automatedTrackingSendEvents: Boolean
 
     var automaticBackupUri: String
@@ -119,6 +139,8 @@ interface PrefsRepo {
 
     var defaultTypesHidden: Boolean
 
+    var isNavBarAtTheBottom: Boolean
+
     fun setWidget(widgetId: Int, recordType: Long)
 
     fun getWidget(widgetId: Int): Long
@@ -128,6 +150,8 @@ interface PrefsRepo {
     fun setStatisticsWidget(widgetId: Int, data: StatisticsWidgetData)
 
     fun getStatisticsWidget(widgetId: Int): StatisticsWidgetData
+
+    fun getStatisticsWidgetLastDays(widgetId: Int): Int
 
     fun removeStatisticsWidget(widgetId: Int)
 
@@ -150,4 +174,6 @@ interface PrefsRepo {
     fun getTagOrderManual(): Map<Long, Long>
 
     fun clear()
+    fun clearDefaultTypesHidden()
+    fun clearPomodoroSettingsClick()
 }

@@ -152,17 +152,20 @@ class BarChartView @JvmOverloads constructor(
         selectedBarWasShownOnStart = savedState?.selectedBarWasShownOnStart ?: true
     }
 
-    fun setBars(data: List<ViewData>) {
+    fun setBars(
+        data: List<ViewData>,
+        animate: Boolean,
+    ) {
         bars = data.takeUnless { it.isEmpty() } ?: listOf(ViewData(0f, "", ""))
         maxValue = data.maxOfOrNull(ViewData::value) ?: 1f
-        if (showSelectedBarOnStart && !selectedBarWasShownOnStart) {
+        if (data.isNotEmpty() && showSelectedBarOnStart && !selectedBarWasShownOnStart) {
             selectedBar = bars.size - 1
             selectedBarWasShownOnStart = true
         } else {
             selectedBar = -1
         }
         invalidate()
-        if (!isInEditMode) animateBars()
+        if (!isInEditMode && animate) animateBars()
     }
 
     fun setBarColor(color: Int) {
@@ -189,6 +192,10 @@ class BarChartView @JvmOverloads constructor(
     fun setGoalValue(value: Float) {
         goalValue = value
         invalidate()
+    }
+
+    fun showSelectedBarOnStart(shouldShow: Boolean) {
+        showSelectedBarOnStart = shouldShow
     }
 
     private fun initArgs(
@@ -507,7 +514,7 @@ class BarChartView @JvmOverloads constructor(
             val segments = barCountInEdit.takeIf { it != 0 } ?: 5
             (segments downTo 1).toList()
                 .map { ViewData(it.toFloat(), it.toString(), it.toString()) }
-                .let(::setBars)
+                .let { setBars(it, animate = false) }
             selectedBar = barCountInEdit / 2
         }
     }

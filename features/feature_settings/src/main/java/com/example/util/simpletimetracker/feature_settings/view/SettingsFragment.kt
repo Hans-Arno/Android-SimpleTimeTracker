@@ -97,8 +97,8 @@ class SettingsFragment :
             rvSettingsContent.smoothScrollToPosition(0)
             mainTabsViewModel.onHandled()
         }
-        viewModel.mainDelegate.themeChanged.observe(::changeTheme)
-        viewModel.displayDelegate.keepScreenOnCheckbox.observe(::setKeepScreenOn)
+        viewModel.themeChanged.observe(::changeTheme)
+        viewModel.keepScreenOnCheckbox.observe(::setKeepScreenOn)
         backupViewModel.requestScreenUpdate.observe { viewModel.onRequestUpdate() }
         mainTabsViewModel.tabReselected.observe(viewModel::onTabReselected)
     }
@@ -133,8 +133,8 @@ class SettingsFragment :
         backupViewModel.onDataExportSettingsSelected(data)
     }
 
-    override fun onTypesSelected(typeIds: List<Long>, tag: String?) {
-        viewModel.onTypesSelected(typeIds, tag)
+    override fun onDataSelected(dataIds: List<Long>, tag: String?) {
+        viewModel.onTypesSelected(dataIds, tag)
     }
 
     private fun onBlockClicked(block: SettingsBlock) {

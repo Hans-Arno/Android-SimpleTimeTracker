@@ -1,268 +1,142 @@
 package com.example.util.simpletimetracker.feature_statistics_detail.viewModel
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.util.simpletimetracker.core.base.BaseViewModel
+import com.example.util.simpletimetracker.core.base.SingleLiveEvent
+import com.example.util.simpletimetracker.core.base.ViewModelDelegate
+import com.example.util.simpletimetracker.core.extension.lazySuspend
 import com.example.util.simpletimetracker.core.extension.set
-import com.example.util.simpletimetracker.core.extension.toModel
 import com.example.util.simpletimetracker.core.extension.toParams
-import com.example.util.simpletimetracker.core.interactor.RecordFilterInteractor
-import com.example.util.simpletimetracker.core.mapper.RangeViewDataMapper
-import com.example.util.simpletimetracker.core.mapper.TimeMapper
-import com.example.util.simpletimetracker.core.repo.ResourceRepo
 import com.example.util.simpletimetracker.core.view.buttonsRowView.ButtonsRowViewData
-import com.example.util.simpletimetracker.core.viewData.RangeViewData
 import com.example.util.simpletimetracker.core.viewData.RangesViewData
-import com.example.util.simpletimetracker.core.viewData.SelectDateViewData
-import com.example.util.simpletimetracker.core.viewData.SelectRangeViewData
-import com.example.util.simpletimetracker.domain.extension.getDaily
-import com.example.util.simpletimetracker.domain.interactor.PrefsInteractor
 import com.example.util.simpletimetracker.domain.model.Coordinates
 import com.example.util.simpletimetracker.domain.model.Range
 import com.example.util.simpletimetracker.domain.model.RangeLength
 import com.example.util.simpletimetracker.domain.model.RecordBase
-import com.example.util.simpletimetracker.domain.model.RecordTypeGoal
 import com.example.util.simpletimetracker.domain.model.RecordsFilter
 import com.example.util.simpletimetracker.feature_base_adapter.ViewHolderType
-import com.example.util.simpletimetracker.feature_statistics_detail.R
+import com.example.util.simpletimetracker.feature_statistics_detail.adapter.StatisticsDetailBlock
+import com.example.util.simpletimetracker.feature_statistics_detail.adapter.StatisticsDetailPreviewsViewData
 import com.example.util.simpletimetracker.feature_statistics_detail.customView.SeriesCalendarView
-import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailAdjacentActivitiesInteractor
-import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailChartInteractor
-import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailGetGoalFromFilterInteractor
-import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailPreviewInteractor
-import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailSplitChartInteractor
-import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailStatsInteractor
-import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailStreaksInteractor
-import com.example.util.simpletimetracker.feature_statistics_detail.mapper.StatisticsDetailViewDataMapper
-import com.example.util.simpletimetracker.feature_statistics_detail.model.ChartGrouping
-import com.example.util.simpletimetracker.feature_statistics_detail.model.ChartLength
-import com.example.util.simpletimetracker.feature_statistics_detail.model.SplitChartGrouping
-import com.example.util.simpletimetracker.feature_statistics_detail.model.StreaksGoal
-import com.example.util.simpletimetracker.feature_statistics_detail.model.StreaksType
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailCardViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailChartCompositeViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailChartLengthViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailChartViewData
+import com.example.util.simpletimetracker.feature_statistics_detail.interactor.StatisticsDetailContentInteractor
+import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailCardInternalViewData
 import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailClickableLongest
 import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailClickableShortest
 import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailClickableTracked
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailGroupingViewData
 import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailPreviewCompositeViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailPreviewViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailSplitGroupingViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailStatsViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailStreaksGoalViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailStreaksTypeViewData
-import com.example.util.simpletimetracker.feature_statistics_detail.viewData.StatisticsDetailStreaksViewData
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailChartViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailDurationSplitViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailFilterViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailNextActivitiesViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailPreviewViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailRangeViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailSplitChartViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailStatsViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailStreaksViewModelDelegate
+import com.example.util.simpletimetracker.feature_statistics_detail.viewModel.delegate.StatisticsDetailViewModelDelegate
 import com.example.util.simpletimetracker.feature_views.spinner.CustomSpinner
 import com.example.util.simpletimetracker.navigation.Router
 import com.example.util.simpletimetracker.navigation.params.notification.PopupParams
-import com.example.util.simpletimetracker.navigation.params.screen.CustomRangeSelectionParams
-import com.example.util.simpletimetracker.navigation.params.screen.DateTimeDialogParams
-import com.example.util.simpletimetracker.navigation.params.screen.DateTimeDialogType
 import com.example.util.simpletimetracker.navigation.params.screen.RecordsAllParams
-import com.example.util.simpletimetracker.navigation.params.screen.RecordsFilterParam
-import com.example.util.simpletimetracker.navigation.params.screen.RecordsFilterParams
 import com.example.util.simpletimetracker.navigation.params.screen.RecordsFilterResultParams
 import com.example.util.simpletimetracker.navigation.params.screen.StatisticsDetailParams
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class StatisticsDetailViewModel @Inject constructor(
     private val router: Router,
-    private val resourceRepo: ResourceRepo,
-    private val prefsInteractor: PrefsInteractor,
-    private val recordFilterInteractor: RecordFilterInteractor,
-    private val chartInteractor: StatisticsDetailChartInteractor,
-    private val previewInteractor: StatisticsDetailPreviewInteractor,
-    private val statsInteractor: StatisticsDetailStatsInteractor,
-    private val streaksInteractor: StatisticsDetailStreaksInteractor,
-    private val splitChartInteractor: StatisticsDetailSplitChartInteractor,
-    private val adjacentActivitiesInteractor: StatisticsDetailAdjacentActivitiesInteractor,
-    private val statisticsDetailGetGoalFromFilterInteractor: StatisticsDetailGetGoalFromFilterInteractor,
-    private val mapper: StatisticsDetailViewDataMapper,
-    private val rangeViewDataMapper: RangeViewDataMapper,
-    private val timeMapper: TimeMapper,
-) : ViewModel() {
+    private val statisticsDetailContentInteractor: StatisticsDetailContentInteractor,
+    private val previewDelegate: StatisticsDetailPreviewViewModelDelegate,
+    private val statsDelegate: StatisticsDetailStatsViewModelDelegate,
+    private val streaksDelegate: StatisticsDetailStreaksViewModelDelegate,
+    private val chartDelegate: StatisticsDetailChartViewModelDelegate,
+    private val splitChartDelegate: StatisticsDetailSplitChartViewModelDelegate,
+    private val nextActivitiesDelegate: StatisticsDetailNextActivitiesViewModelDelegate,
+    private val durationSplitDelegate: StatisticsDetailDurationSplitViewModelDelegate,
+    private val rangeDelegate: StatisticsDetailRangeViewModelDelegate,
+    private val filterDelegate: StatisticsDetailFilterViewModelDelegate,
+) : BaseViewModel() {
 
-    val previewViewData: LiveData<StatisticsDetailPreviewCompositeViewData> by lazy {
-        return@lazy MutableLiveData<StatisticsDetailPreviewCompositeViewData>().let { initial ->
-            viewModelScope.launch { initial.value = loadPreviewViewData() }
-            initial
-        }
-    }
-    val statsViewData: LiveData<StatisticsDetailStatsViewData> by lazy {
-        return@lazy MutableLiveData(loadEmptyStatsViewData())
-    }
-    val streaksViewData: LiveData<StatisticsDetailStreaksViewData> by lazy {
-        return@lazy MutableLiveData(loadEmptyStreaksViewData())
-    }
-    val streaksTypeViewData: LiveData<List<ViewHolderType>> by lazy {
-        return@lazy MutableLiveData(loadStreaksTypeViewData())
-    }
-    val streaksGoalViewData: LiveData<List<ViewHolderType>> by lazy {
-        return@lazy MutableLiveData<List<ViewHolderType>>().let { initial ->
-            viewModelScope.launch { initial.value = loadStreaksGoalViewData() }
-            initial
-        }
-    }
-    val chartViewData: LiveData<StatisticsDetailChartCompositeViewData> by lazy {
-        return@lazy MutableLiveData()
-    }
-    val emptyRangeAveragesData: LiveData<List<StatisticsDetailCardViewData>> by lazy {
-        return@lazy MutableLiveData(loadEmptyRangeAveragesData())
-    }
-    val splitChartGroupingViewData: LiveData<List<ViewHolderType>> by lazy {
-        return@lazy MutableLiveData(loadSplitChartGroupingViewData())
-    }
-    val nextActivitiesViewData: LiveData<List<ViewHolderType>> by lazy {
-        return@lazy MutableLiveData(emptyList())
-    }
-    val splitChartViewData: LiveData<StatisticsDetailChartViewData> by lazy {
-        return@lazy MutableLiveData()
-    }
-    val comparisonSplitChartViewData: LiveData<StatisticsDetailChartViewData> by lazy {
-        return@lazy MutableLiveData()
-    }
-    val durationSplitChartViewData: LiveData<StatisticsDetailChartViewData> by lazy {
-        return@lazy MutableLiveData()
-    }
-    val comparisonDurationSplitChartViewData: LiveData<StatisticsDetailChartViewData> by lazy {
-        return@lazy MutableLiveData()
-    }
-    val title: LiveData<String> by lazy {
-        return@lazy MutableLiveData<String>().let { initial ->
-            viewModelScope.launch { initial.value = loadTitle() }
-            initial
-        }
-    }
-    val rangeItems: LiveData<RangesViewData> by lazy {
-        return@lazy MutableLiveData(loadRanges())
-    }
-    val rangeButtonsVisibility: LiveData<Boolean> by lazy {
-        return@lazy MutableLiveData(loadButtonsVisibility())
-    }
+    val scrollToTop: LiveData<Unit> = SingleLiveEvent()
+    val content: LiveData<List<ViewHolderType>> by lazySuspend { loadContent() }
+    val title: LiveData<String> by rangeDelegate::title
+    val rangeItems: LiveData<RangesViewData> by rangeDelegate::rangeItems
+    val rangeButtonsVisibility: LiveData<Boolean> by rangeDelegate::rangeButtonsVisibility
+    val previewViewData: LiveData<StatisticsDetailPreviewCompositeViewData?> by previewDelegate::viewData
 
     private lateinit var extra: StatisticsDetailParams
 
-    private var chartGrouping: ChartGrouping = ChartGrouping.DAILY
-    private var streaksType: StreaksType = StreaksType.LONGEST
-    private var streaksGoal: StreaksGoal = StreaksGoal.ANY
-    private var chartLength: ChartLength = ChartLength.TEN
-    private var splitChartGrouping: SplitChartGrouping = SplitChartGrouping.DAILY
-    private var rangeLength: RangeLength = RangeLength.All
-    private var rangePosition: Int = 0
-    private val filter: MutableList<RecordsFilter> by lazy {
-        extra.filter.map(RecordsFilterParam::toModel).toMutableList()
+    private val delegates: List<StatisticsDetailViewModelDelegate> = listOf(
+        previewDelegate,
+        statsDelegate,
+        streaksDelegate,
+        chartDelegate,
+        splitChartDelegate,
+        nextActivitiesDelegate,
+        durationSplitDelegate,
+        rangeDelegate,
+        filterDelegate,
+    )
+
+    init {
+        val delegateParent = getDelegateParent()
+        delegates.forEach { it.attach(delegateParent) }
     }
-    private val comparisonFilter: MutableList<RecordsFilter> = mutableListOf()
-    private var records: List<RecordBase> = emptyList() // all records with selected ids
-    private var compareRecords: List<RecordBase> = emptyList() // all records with selected ids
-    private var loadJob: Job? = null
-    private var dailyGoal: Result<RecordTypeGoal.Type?>? = null
-    private var compareDailyGoal: Result<RecordTypeGoal.Type?>? = null
+
+    override fun onCleared() {
+        delegates.forEach { (it as? ViewModelDelegate)?.clear() }
+        super.onCleared()
+    }
 
     fun initialize(extra: StatisticsDetailParams) {
         if (this::extra.isInitialized) return
         this.extra = extra
-        rangeLength = getRangeLength(extra.range)
-        rangePosition = extra.shift
+        rangeDelegate.initialize(extra)
     }
 
     fun onVisible() {
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            loadRecordsCache()
-            updateViewData()
-        }
+        filterDelegate.onVisible()
     }
 
-    fun onFilterClick() = viewModelScope.launch {
-        openFilter(
-            tag = FILTER_TAG,
-            title = resourceRepo.getString(R.string.chart_filter_hint),
-            filters = filter,
-        )
+    fun onFilterClick() {
+        filterDelegate.onFilterClick()
     }
 
-    fun onCompareClick() = viewModelScope.launch {
-        openFilter(
-            tag = COMPARE_TAG,
-            title = resourceRepo.getString(R.string.types_compare_hint),
-            filters = comparisonFilter,
-        )
+    fun onCompareClick() {
+        filterDelegate.onCompareClick()
     }
 
     fun onTypesFilterSelected(result: RecordsFilterResultParams) {
-        val finalFilters = result.filters.filter { it !is RecordsFilter.Date }
-
-        when (result.tag) {
-            FILTER_TAG -> {
-                filter.clear()
-                filter.addAll(finalFilters)
-            }
-            COMPARE_TAG -> {
-                comparisonFilter.clear()
-                comparisonFilter.addAll(finalFilters)
-            }
-        }
-
-        // Update is on dismiss.
+        filterDelegate.onTypesFilterSelected(result)
     }
 
     fun onTypesFilterDismissed(tag: String) {
-        if (tag !in listOf(FILTER_TAG, COMPARE_TAG)) return
+        filterDelegate.onTypesFilterDismissed(tag)
+    }
 
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            dailyGoal = Result.success(getDailyGoalType(filter))
-            compareDailyGoal = Result.success(getDailyGoalType(comparisonFilter))
-            loadRecordsCache()
-            updatePreviewViewData()
-            updateViewData()
-            updateStreaksGoalViewData()
+    fun onButtonsRowClick(block: StatisticsDetailBlock, viewData: ButtonsRowViewData) {
+        when (block) {
+            StatisticsDetailBlock.ChartGrouping ->
+                chartDelegate.onChartGroupingClick(viewData)
+            StatisticsDetailBlock.ChartLength ->
+                chartDelegate.onChartLengthClick(viewData)
+            StatisticsDetailBlock.SeriesGoal ->
+                streaksDelegate.onStreaksGoalClick(viewData)
+            StatisticsDetailBlock.SeriesType ->
+                streaksDelegate.onStreaksTypeClick(viewData)
+            StatisticsDetailBlock.SplitChartGrouping ->
+                splitChartDelegate.onSplitChartGroupingClick(viewData)
+            else -> {
+                // Do nothing
+            }
         }
     }
 
-    fun onStreaksTypeClick(viewData: ButtonsRowViewData) {
-        if (viewData !is StatisticsDetailStreaksTypeViewData) return
-        streaksType = viewData.type
-        updateStreaksTypeViewData()
-        updateStreaksViewData()
-    }
-
-    fun onStreaksGoalClick(viewData: ButtonsRowViewData) {
-        if (viewData !is StatisticsDetailStreaksGoalViewData) return
-        streaksGoal = viewData.type
-        updateStreaksGoalViewData()
-        updateStreaksViewData()
-    }
-
-    fun onChartGroupingClick(viewData: ButtonsRowViewData) {
-        if (viewData !is StatisticsDetailGroupingViewData) return
-        this.chartGrouping = viewData.chartGrouping
-        updateChartViewData()
-    }
-
-    fun onChartLengthClick(viewData: ButtonsRowViewData) {
-        if (viewData !is StatisticsDetailChartLengthViewData) return
-        this.chartLength = viewData.chartLength
-        updateChartViewData()
-    }
-
-    fun onSplitChartGroupingClick(viewData: ButtonsRowViewData) {
-        if (viewData !is StatisticsDetailSplitGroupingViewData) return
-        this.splitChartGrouping = viewData.splitChartGrouping
-        updateSplitChartGroupingViewData()
-        updateSplitChartViewData()
-    }
-
     fun onCardClick(
-        type: StatisticsDetailCardViewData.ClickableType,
+        type: StatisticsDetailCardInternalViewData.ClickableType,
         coordinates: Coordinates,
     ) {
         when (type) {
@@ -285,404 +159,135 @@ class StatisticsDetailViewModel @Inject constructor(
     }
 
     fun onPreviousClick() {
-        updatePosition(rangePosition - 1)
+        rangeDelegate.onPreviousClick()
     }
 
     fun onTodayClick() {
-        updatePosition(0)
+        rangeDelegate.onTodayClick()
     }
 
     fun onNextClick() {
-        updatePosition(rangePosition + 1)
+        rangeDelegate.onNextClick()
     }
 
     fun onRangeSelected(item: CustomSpinner.CustomSpinnerItem) {
-        when (item) {
-            is SelectDateViewData -> {
-                onSelectDateClick()
-                updateRanges()
-            }
-            is SelectRangeViewData -> {
-                onSelectRangeClick()
-                updateRanges()
-            }
-            is RangeViewData -> {
-                rangeLength = item.range
-                onRangeChanged()
-            }
-        }
+        rangeDelegate.onRangeSelected(item)
     }
 
-    fun onDateTimeSet(timestamp: Long, tag: String?) = viewModelScope.launch {
-        when (tag) {
-            DATE_TAG -> {
-                timeMapper.toTimestampShift(
-                    toTime = timestamp,
-                    range = rangeLength,
-                    firstDayOfWeek = prefsInteractor.getFirstDayOfWeek(),
-                ).toInt().let(::updatePosition)
-            }
-        }
+    fun onDateTimeSet(timestamp: Long, tag: String?) {
+        rangeDelegate.onDateTimeSet(timestamp, tag)
     }
 
     fun onCustomRangeSelected(range: Range) {
-        rangeLength = RangeLength.Custom(range)
-        onRangeChanged()
+        rangeDelegate.onCustomRangeSelected(range)
+    }
+
+    fun onCountSet(count: Long, tag: String?) = viewModelScope.launch {
+        rangeDelegate.onCountSet(count, tag)
     }
 
     fun onStreaksCalendarClick(
         viewData: SeriesCalendarView.ViewData,
         coordinates: Coordinates,
     ) {
-        PopupParams(
-            timeMapper.formatDayDateYear(viewData.rangeStart),
-            coordinates,
-        ).let(router::show)
-    }
-
-    fun onComparisonStreaksCalendarClick(
-        viewData: SeriesCalendarView.ViewData,
-        coordinates: Coordinates,
-    ) {
-        PopupParams(
-            timeMapper.formatDayDateYear(viewData.rangeStart),
-            coordinates,
-        ).let(router::show)
+        streaksDelegate.onStreaksCalendarClick(viewData, coordinates)
     }
 
     private fun onRecordsClick() {
         viewModelScope.launch {
-            val dateFilter = recordFilterInteractor.mapDateFilter(rangeLength, rangePosition)
-                ?.let(::listOf).orEmpty()
-            val finalFilters = filter
-                .plus(dateFilter)
+            val finalFilters = filterDelegate.provideFilter()
+                .plus(rangeDelegate.getDateFilter())
                 .map(RecordsFilter::toParams).toList()
 
             router.navigate(RecordsAllParams(finalFilters))
         }
     }
 
-    private fun onSelectDateClick() = viewModelScope.launch {
-        val useMilitaryTime = prefsInteractor.getUseMilitaryTimeFormat()
-        val firstDayOfWeek = prefsInteractor.getFirstDayOfWeek()
-        val current = timeMapper.toTimestampShifted(
-            rangesFromToday = rangePosition,
-            range = rangeLength,
-        )
-
-        router.navigate(
-            DateTimeDialogParams(
-                tag = DATE_TAG,
-                type = DateTimeDialogType.DATE,
-                timestamp = current,
-                useMilitaryTime = useMilitaryTime,
-                firstDayOfWeek = firstDayOfWeek,
-            ),
-        )
-    }
-
-    private fun onSelectRangeClick() = viewModelScope.launch {
-        val currentCustomRange = (rangeLength as? RangeLength.Custom)?.range
-
-        CustomRangeSelectionParams(
-            rangeStart = currentCustomRange?.timeStarted,
-            rangeEnd = currentCustomRange?.timeEnded,
-        ).let(router::navigate)
-    }
-
-    private fun onRangeChanged() {
-        viewModelScope.launch { prefsInteractor.setStatisticsDetailRange(rangeLength) }
-        updateSplitChartGroupingViewData()
-        updatePosition(0)
-    }
-
-    private fun updatePosition(newPosition: Int) {
-        rangePosition = newPosition
-        updateTitle()
-        updateRanges()
-        updateButtonsVisibility()
-        updateViewData()
+    private fun checkTopScroll(
+        oldData: List<ViewHolderType>,
+        newData: List<ViewHolderType>,
+    ) {
+        val previewsWillBeShown = oldData.none { it is StatisticsDetailPreviewsViewData } &&
+            newData.any { it is StatisticsDetailPreviewsViewData }
+        if (previewsWillBeShown) {
+            scrollToTop.set(Unit)
+        }
     }
 
     private fun updateViewData() {
-        updateStatsViewData()
-        updateStreaksViewData()
-        updateChartViewData()
-        updateSplitChartViewData()
-        updateDurationSplitChartViewData()
-        updateNextActivitiesViewData()
+        statsDelegate.updateViewData()
+        streaksDelegate.updateStreaksViewData()
+        chartDelegate.updateViewData()
+        splitChartDelegate.updateSplitChartViewData()
+        durationSplitDelegate.updateViewData()
+        nextActivitiesDelegate.updateViewData()
     }
 
-    private fun getRangeLength(range: StatisticsDetailParams.RangeLengthParams): RangeLength {
-        return when (range) {
-            is StatisticsDetailParams.RangeLengthParams.Day -> RangeLength.Day
-            is StatisticsDetailParams.RangeLengthParams.Week -> RangeLength.Week
-            is StatisticsDetailParams.RangeLengthParams.Month -> RangeLength.Month
-            is StatisticsDetailParams.RangeLengthParams.Year -> RangeLength.Year
-            is StatisticsDetailParams.RangeLengthParams.All -> RangeLength.All
-            is StatisticsDetailParams.RangeLengthParams.Custom -> Range(
-                timeStarted = range.start, timeEnded = range.end,
-            ).let(RangeLength::Custom)
-            is StatisticsDetailParams.RangeLengthParams.Last -> RangeLength.Last
+    private fun updateContent() {
+        val oldData = content.value.orEmpty()
+        val data = loadContent()
+        content.set(data)
+        checkTopScroll(oldData, data)
+    }
+
+    // TODO move to delegates
+    private fun loadContent(): List<ViewHolderType> {
+        return statisticsDetailContentInteractor.getContent(
+            previewViewData = previewViewData.value,
+            chartViewData = chartDelegate.viewData.value,
+            statsViewData = statsDelegate.viewData.value,
+            streaksViewData = streaksDelegate.streaksViewData.value,
+            streaksGoalViewData = streaksDelegate.streaksGoalViewData.value,
+            streaksTypeViewData = streaksDelegate.streaksTypeViewData.value,
+            splitChartViewData = splitChartDelegate.splitChartViewData.value,
+            comparisonSplitChartViewData = splitChartDelegate.comparisonSplitChartViewData.value,
+            splitChartGroupingViewData = splitChartDelegate.splitChartGroupingViewData.value,
+            durationSplitChartViewData = durationSplitDelegate.viewData.value,
+            comparisonDurationSplitChartViewData = durationSplitDelegate.comparisonViewData.value,
+            nextActivitiesViewData = nextActivitiesDelegate.viewData.value,
+        )
+    }
+
+    private fun getDelegateParent(): StatisticsDetailViewModelDelegate.Parent {
+        return object : StatisticsDetailViewModelDelegate.Parent {
+            override val extra: StatisticsDetailParams
+                get() = this@StatisticsDetailViewModel.extra
+            override val records: List<RecordBase>
+                get() = this@StatisticsDetailViewModel.filterDelegate.provideRecords()
+            override val compareRecords: List<RecordBase>
+                get() = this@StatisticsDetailViewModel.filterDelegate.provideCompareRecords()
+            override val filter: List<RecordsFilter>
+                get() = this@StatisticsDetailViewModel.filterDelegate.provideFilter()
+            override val comparisonFilter: List<RecordsFilter>
+                get() = this@StatisticsDetailViewModel.filterDelegate.provideComparisonFilter()
+            override val rangeLength: RangeLength
+                get() = this@StatisticsDetailViewModel.rangeDelegate.provideRangeLength()
+            override val rangePosition: Int
+                get() = this@StatisticsDetailViewModel.rangeDelegate.provideRangePosition()
+
+            override fun updateContent() {
+                this@StatisticsDetailViewModel.updateContent()
+            }
+
+            override fun onRangeChanged() {
+                splitChartDelegate.updateSplitChartGroupingViewData()
+                streaksDelegate.updateStreaksGoalViewData()
+            }
+
+            override fun updateViewData() {
+                this@StatisticsDetailViewModel.updateViewData()
+            }
+
+            override suspend fun getDateFilter(): List<RecordsFilter> {
+                return rangeDelegate.getDateFilter()
+            }
+
+            override suspend fun onTypesFilterDismissed() {
+                streaksDelegate.onTypesFilterDismissed()
+                previewDelegate.updateViewData()
+                streaksDelegate.updateStreaksGoalViewData()
+                updateViewData()
+            }
         }
-    }
-
-    private suspend fun openFilter(
-        tag: String,
-        title: String,
-        filters: List<RecordsFilter>,
-    ) {
-        val dateFilter = recordFilterInteractor.mapDateFilter(rangeLength, rangePosition)
-            ?.let(::listOf).orEmpty()
-
-        router.navigate(
-            RecordsFilterParams(
-                tag = tag,
-                title = title,
-                dateSelectionAvailable = false,
-                untrackedSelectionAvailable = true,
-                multitaskSelectionAvailable = true,
-                filters = filters
-                    .plus(dateFilter)
-                    .map(RecordsFilter::toParams).toList(),
-            ),
-        )
-    }
-
-    private suspend fun getDailyGoalType(
-        filters: List<RecordsFilter>,
-    ): RecordTypeGoal.Type? {
-        return statisticsDetailGetGoalFromFilterInteractor.execute(filters)
-            .getDaily()?.type
-    }
-
-    private suspend fun loadRecordsCache() {
-        // Load all records without date filter for faster date selection.
-        records = recordFilterInteractor.getByFilter(filter)
-        compareRecords = recordFilterInteractor.getByFilter(comparisonFilter)
-    }
-
-    private suspend fun getDailyGoal(): RecordTypeGoal.Type? {
-        // Initialize if null.
-        val goal = dailyGoal
-        return if (goal == null) {
-            getDailyGoalType(filter)
-                .also { dailyGoal = Result.success(it) }
-        } else {
-            goal.getOrNull()
-        }
-    }
-
-    private suspend fun getCompareDailyGoal(): RecordTypeGoal.Type? {
-        // Initialize if null.
-        val goal = compareDailyGoal
-        return if (goal == null) {
-            getDailyGoalType(comparisonFilter)
-                .also { compareDailyGoal = Result.success(it) }
-        } else {
-            goal.getOrNull()
-        }
-    }
-
-    private fun updatePreviewViewData() = viewModelScope.launch {
-        previewViewData.set(loadPreviewViewData())
-    }
-
-    private suspend fun loadPreviewViewData(): StatisticsDetailPreviewCompositeViewData {
-        val data = previewInteractor.getPreviewData(
-            filterParams = filter,
-            isForComparison = false,
-        )
-        val comparisonData = previewInteractor.getPreviewData(
-            filterParams = comparisonFilter,
-            isForComparison = true,
-        )
-        return StatisticsDetailPreviewCompositeViewData(
-            data = data.firstOrNull() as? StatisticsDetailPreviewViewData,
-            additionalData = data.drop(1),
-            comparisonData = comparisonData,
-        )
-    }
-
-    private fun updateStatsViewData() = viewModelScope.launch {
-        statsViewData.set(loadStatsViewData())
-    }
-
-    private fun loadEmptyStatsViewData(): StatisticsDetailStatsViewData {
-        return statsInteractor.getEmptyStatsViewData()
-    }
-
-    private suspend fun loadStatsViewData(): StatisticsDetailStatsViewData {
-        return statsInteractor.getStatsViewData(
-            records = records,
-            compareRecords = compareRecords,
-            showComparison = comparisonFilter.isNotEmpty(),
-            rangeLength = rangeLength,
-            rangePosition = rangePosition,
-        )
-    }
-
-    private fun updateStreaksTypeViewData() {
-        streaksTypeViewData.set(loadStreaksTypeViewData())
-    }
-
-    private fun loadStreaksTypeViewData(): List<ViewHolderType> {
-        return streaksInteractor.mapToStreaksTypeViewData(streaksType)
-    }
-
-    private fun updateStreaksGoalViewData() = viewModelScope.launch {
-        streaksGoalViewData.set(loadStreaksGoalViewData())
-    }
-
-    private suspend fun loadStreaksGoalViewData(): List<ViewHolderType> {
-        return streaksInteractor.mapToStreaksGoalViewData(
-            streaksGoal = streaksGoal,
-            dailyGoal = getDailyGoal(),
-            compareGoalType = getCompareDailyGoal(),
-            rangeLength = rangeLength,
-        )
-    }
-
-    private fun updateStreaksViewData() = viewModelScope.launch {
-        streaksViewData.set(loadStreaksViewData())
-    }
-
-    private fun loadEmptyStreaksViewData(): StatisticsDetailStreaksViewData {
-        return streaksInteractor.getEmptyStreaksViewData()
-    }
-
-    private suspend fun loadStreaksViewData(): StatisticsDetailStreaksViewData {
-        return streaksInteractor.getStreaksViewData(
-            records = records,
-            compareRecords = compareRecords,
-            showComparison = comparisonFilter.isNotEmpty(),
-            rangeLength = rangeLength,
-            rangePosition = rangePosition,
-            streaksType = streaksType,
-            streaksGoal = streaksGoal,
-            goalType = getDailyGoal(),
-            compareGoalType = getCompareDailyGoal(),
-        )
-    }
-
-    private fun updateChartViewData() = viewModelScope.launch {
-        val data = loadChartViewData()
-        chartViewData.set(data)
-        chartGrouping = data.appliedChartGrouping
-        chartLength = data.appliedChartLength
-    }
-
-    private fun loadEmptyRangeAveragesData(): List<StatisticsDetailCardViewData> {
-        return chartInteractor.getEmptyRangeAveragesData()
-    }
-
-    private suspend fun loadChartViewData(): StatisticsDetailChartCompositeViewData {
-        return chartInteractor.getChartViewData(
-            records = records,
-            compareRecords = compareRecords,
-            filter = filter,
-            compare = comparisonFilter,
-            currentChartGrouping = chartGrouping,
-            currentChartLength = chartLength,
-            rangeLength = rangeLength,
-            rangePosition = rangePosition,
-        )
-    }
-
-    private fun updateSplitChartViewData() = viewModelScope.launch {
-        splitChartViewData.set(loadSplitChartViewData(isForComparison = false))
-        comparisonSplitChartViewData.set(loadSplitChartViewData(isForComparison = true))
-    }
-
-    private suspend fun loadSplitChartViewData(isForComparison: Boolean): StatisticsDetailChartViewData {
-        val grouping = splitChartGrouping
-            .takeUnless { rangeLength is RangeLength.Day }
-            ?: SplitChartGrouping.HOURLY
-
-        return splitChartInteractor.getSplitChartViewData(
-            records = if (isForComparison) compareRecords else records,
-            filter = if (isForComparison) comparisonFilter else filter,
-            isForComparison = isForComparison,
-            rangeLength = rangeLength,
-            rangePosition = rangePosition,
-            splitChartGrouping = grouping,
-        )
-    }
-
-    private fun updateDurationSplitChartViewData() = viewModelScope.launch {
-        durationSplitChartViewData
-            .set(loadDurationSplitChartViewData(isForComparison = false))
-        comparisonDurationSplitChartViewData
-            .set(loadDurationSplitChartViewData(isForComparison = true))
-    }
-
-    private suspend fun loadDurationSplitChartViewData(isForComparison: Boolean): StatisticsDetailChartViewData {
-        return splitChartInteractor.getDurationSplitViewData(
-            records = if (isForComparison) compareRecords else records,
-            filter = if (isForComparison) comparisonFilter else filter,
-            isForComparison = isForComparison,
-            rangeLength = rangeLength,
-            rangePosition = rangePosition,
-        )
-    }
-
-    private fun updateSplitChartGroupingViewData() {
-        splitChartGroupingViewData.set(loadSplitChartGroupingViewData())
-    }
-
-    private fun loadSplitChartGroupingViewData(): List<ViewHolderType> {
-        return mapper.mapToSplitChartGroupingViewData(rangeLength, splitChartGrouping)
-    }
-
-    private fun updateNextActivitiesViewData() = viewModelScope.launch {
-        nextActivitiesViewData.set(loadNextActivitiesViewData())
-    }
-
-    private suspend fun loadNextActivitiesViewData(): List<ViewHolderType> {
-        return adjacentActivitiesInteractor.getNextActivitiesViewData(
-            filter = filter,
-            rangeLength = rangeLength,
-            rangePosition = rangePosition,
-        )
-    }
-
-    private fun updateTitle() = viewModelScope.launch {
-        title.set(loadTitle())
-    }
-
-    private suspend fun loadTitle(): String {
-        val startOfDayShift = prefsInteractor.getStartOfDayShift()
-        val firstDayOfWeek = prefsInteractor.getFirstDayOfWeek()
-        return rangeViewDataMapper.mapToTitle(
-            rangeLength = rangeLength,
-            position = rangePosition,
-            startOfDayShift = startOfDayShift,
-            firstDayOfWeek = firstDayOfWeek,
-        )
-    }
-
-    private fun updateRanges() {
-        rangeItems.set(loadRanges())
-    }
-
-    private fun loadRanges(): RangesViewData {
-        return rangeViewDataMapper.mapToRanges(rangeLength)
-    }
-
-    private fun updateButtonsVisibility() {
-        rangeButtonsVisibility.set(loadButtonsVisibility())
-    }
-
-    private fun loadButtonsVisibility(): Boolean {
-        return when (rangeLength) {
-            is RangeLength.All, is RangeLength.Custom, is RangeLength.Last -> false
-            else -> true
-        }
-    }
-
-    companion object {
-        private const val DATE_TAG = "statistics_detail_date_tag"
-        private const val FILTER_TAG = "statistics_detail_filter_tag"
-        private const val COMPARE_TAG = "statistics_detail_compare_tag"
     }
 }

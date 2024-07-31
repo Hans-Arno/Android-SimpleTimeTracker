@@ -8,17 +8,20 @@ import com.example.util.simpletimetracker.feature_settings.R
 import com.example.util.simpletimetracker.core.viewData.SettingsBlock
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsBottomViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsCheckboxViewData
+import com.example.util.simpletimetracker.feature_settings.adapter.SettingsCheckboxWithButtonViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsCheckboxWithRangeViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsCheckboxWithRangeViewData.RangeViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsCollapseViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsHintViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSelectorViewData
+import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSpinnerEvenViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSpinnerViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSpinnerWithButtonViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsTextViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsTopViewData
 import com.example.util.simpletimetracker.feature_settings.mapper.SettingsMapper
 import com.example.util.simpletimetracker.feature_settings.viewData.DaysInCalendarViewData
+import com.example.util.simpletimetracker.feature_settings.viewData.RepeatButtonViewData
 import com.example.util.simpletimetracker.feature_settings.viewData.WidgetTransparencyViewData
 import com.example.util.simpletimetracker.navigation.params.screen.CardOrderDialogParams
 import javax.inject.Inject
@@ -92,7 +95,15 @@ class SettingsDisplayViewDataInteractor @Inject constructor(
                 title = resourceRepo.getString(R.string.settings_show_records_calendar),
                 subtitle = "",
                 isChecked = showRecordsCalendar,
-                bottomSpaceIsVisible = true,
+                bottomSpaceIsVisible = false,
+                dividerIsVisible = false,
+            )
+            result += SettingsCheckboxViewData(
+                block = SettingsBlock.DisplayCalendarButtonOnRecordsTab,
+                title = resourceRepo.getString(R.string.settings_show_calendar_button_on_records_tab),
+                subtitle = "",
+                isChecked = prefsInteractor.getShowCalendarButtonOnRecordsTab(),
+                bottomSpaceIsVisible = !showRecordsCalendar,
                 dividerIsVisible = !showRecordsCalendar,
             )
             if (showRecordsCalendar) {
@@ -101,7 +112,7 @@ class SettingsDisplayViewDataInteractor @Inject constructor(
                     title = resourceRepo.getString(R.string.settings_reverse_order_in_calendar),
                     subtitle = "",
                     isChecked = prefsInteractor.getReverseOrderInCalendar(),
-                    bottomSpaceIsVisible = true,
+                    bottomSpaceIsVisible = false,
                     dividerIsVisible = false,
                 )
                 val daysInCalendarViewData = loadDaysInCalendarViewData()
@@ -121,7 +132,7 @@ class SettingsDisplayViewDataInteractor @Inject constructor(
                 title = resourceRepo.getString(R.string.settings_show_activity_filters),
                 subtitle = "",
                 isChecked = showActivityFilters,
-                bottomSpaceIsVisible = true,
+                bottomSpaceIsVisible = !showActivityFilters,
                 dividerIsVisible = !showActivityFilters,
             )
             if (showActivityFilters) {
@@ -134,6 +145,40 @@ class SettingsDisplayViewDataInteractor @Inject constructor(
                     dividerIsVisible = true,
                 )
             }
+            val enableRepeatButton = prefsInteractor.getEnableRepeatButton()
+            result += SettingsCheckboxViewData(
+                block = SettingsBlock.DisplayEnableRepeatButton,
+                title = resourceRepo.getString(R.string.settings_show_repeat_button),
+                subtitle = "",
+                isChecked = enableRepeatButton,
+                bottomSpaceIsVisible = !enableRepeatButton,
+                dividerIsVisible = !enableRepeatButton,
+            )
+            if (enableRepeatButton) {
+                val repeatButtonViewData = loadRepeatButtonViewData()
+                result += SettingsSpinnerViewData(
+                    block = SettingsBlock.DisplayRepeatButtonMode,
+                    title = resourceRepo.getString(R.string.settings_repeat_button_type),
+                    value = repeatButtonViewData.items
+                        .getOrNull(repeatButtonViewData.selectedPosition)?.text.orEmpty(),
+                    items = repeatButtonViewData.items,
+                    selectedPosition = repeatButtonViewData.selectedPosition,
+                    processSameItemSelected = false,
+                ).let(::SettingsSpinnerEvenViewData)
+            }
+            val enablePomodoroMode = prefsInteractor.getEnablePomodoroMode()
+            result += SettingsCheckboxWithButtonViewData(
+                data = SettingsCheckboxViewData(
+                    block = SettingsBlock.DisplayEnablePomodoroMode,
+                    title = resourceRepo.getString(R.string.settings_enable_pomodoro_mode),
+                    subtitle = "",
+                    isChecked = enablePomodoroMode,
+                    bottomSpaceIsVisible = true,
+                    dividerIsVisible = true,
+                ),
+                buttonBlock = SettingsBlock.DisplayPomodoroModeActivities,
+                isButtonVisible = enablePomodoroMode,
+            )
             result += SettingsCheckboxViewData(
                 block = SettingsBlock.DisplayGoalsOnSeparateTabs,
                 title = resourceRepo.getString(R.string.settings_show_goals_separately),
@@ -143,10 +188,10 @@ class SettingsDisplayViewDataInteractor @Inject constructor(
                 dividerIsVisible = true,
             )
             result += SettingsCheckboxViewData(
-                block = SettingsBlock.DisplayKeepScreenOn,
-                title = resourceRepo.getString(R.string.settings_keep_screen_on),
+                block = SettingsBlock.DisplayNavBarAtTheBottom,
+                title = resourceRepo.getString(R.string.settings_show_nav_bar_at_the_bottom),
                 subtitle = "",
-                isChecked = prefsInteractor.getKeepScreenOn(),
+                isChecked = prefsInteractor.getIsNavBarAtTheBottom(),
                 bottomSpaceIsVisible = true,
                 dividerIsVisible = true,
             )
@@ -294,5 +339,10 @@ class SettingsDisplayViewDataInteractor @Inject constructor(
     private suspend fun loadUseProportionalMinutesViewData(): String {
         return prefsInteractor.getUseProportionalMinutes()
             .let(settingsMapper::toUseProportionalMinutesHint)
+    }
+
+    private suspend fun loadRepeatButtonViewData(): RepeatButtonViewData {
+        return prefsInteractor.getRepeatButtonType()
+            .let(settingsMapper::toRepeatButtonViewData)
     }
 }

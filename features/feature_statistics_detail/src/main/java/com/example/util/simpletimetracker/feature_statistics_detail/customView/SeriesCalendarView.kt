@@ -38,7 +38,7 @@ class SeriesCalendarView @JvmOverloads constructor(
     // Attrs
 
     private val columnsCount: Int = 26
-    private val rowsCount: Int = 7
+    private var rowsCount: Int = 7
     private val cellPadding: Float = 0.5f.dpToPx().toFloat()
     private val cellRadius: Float = 4f.dpToPx().toFloat()
     private var cellSize: Float = 0f
@@ -67,6 +67,7 @@ class SeriesCalendarView @JvmOverloads constructor(
     init {
         initArgs(context, attrs, defStyleAttr)
         initPaint()
+        initEditMode()
     }
 
     override fun onSaveInstanceState(): Parcelable {
@@ -120,13 +121,17 @@ class SeriesCalendarView @JvmOverloads constructor(
         this.listener = listener
     }
 
-    fun setData(viewData: List<ViewData>) {
+    fun setData(
+        viewData: List<ViewData>,
+        rowsCount: Int,
+    ) {
         if (data.size != viewData.size) {
             panFactor = 0f
             lastPanFactor = 0f
         }
+        this.rowsCount = rowsCount
         data = viewData.map { Data(cell = it) }
-        invalidate()
+        requestLayout()
     }
 
     fun setCellColor(@ColorInt color: Int) {
@@ -170,6 +175,14 @@ class SeriesCalendarView @JvmOverloads constructor(
             isAntiAlias = true
             color = legendTextColor
             textSize = legendTextSize
+        }
+    }
+
+    private fun initEditMode() {
+        if (isInEditMode) {
+            (30 downTo 1).toList()
+                .map { ViewData.Present(0, "") }
+                .let { setData(it, rowsCount) }
         }
     }
 
@@ -260,11 +273,14 @@ class SeriesCalendarView @JvmOverloads constructor(
             getGlobalVisibleRect(globalRect)
             listener(
                 it.cell,
+                // Calculate from the bottom, because when view is half scrolled on the top,
+                // global rect would be cutoff, and calculation would be wrong.
+                // When vew is half scrolled on the bottom is not so critical.
                 Coordinates(
                     left = globalRect.left + it.boxLeft.toInt(),
-                    top = globalRect.top + it.boxTop.toInt(),
+                    top = globalRect.bottom - height + it.boxTop.toInt(),
                     right = globalRect.left + it.boxRight.toInt(),
-                    bottom = globalRect.top + it.boxBottom.toInt(),
+                    bottom = globalRect.bottom - height + it.boxBottom.toInt(),
                 ),
             )
         }

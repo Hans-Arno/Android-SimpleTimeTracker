@@ -14,14 +14,12 @@ import com.example.util.simpletimetracker.feature_settings.adapter.SettingsColla
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsHintViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSelectorViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSelectorWithButtonViewData
-import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSpinnerEvenViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsSpinnerViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsTextViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsTextWithButtonViewData
 import com.example.util.simpletimetracker.feature_settings.adapter.SettingsTopViewData
 import com.example.util.simpletimetracker.feature_settings.mapper.SettingsMapper
 import com.example.util.simpletimetracker.feature_settings.viewData.FirstDayOfWeekViewData
-import com.example.util.simpletimetracker.feature_settings.viewData.RepeatButtonViewData
 import com.example.util.simpletimetracker.feature_settings.viewData.SettingsStartOfDayViewData
 import java.util.Calendar
 import javax.inject.Inject
@@ -92,6 +90,15 @@ class SettingsAdditionalViewDataInteractor @Inject constructor(
                 dividerIsVisible = true,
             )
 
+            result += SettingsCheckboxViewData(
+                block = SettingsBlock.AdditionalKeepScreenOn,
+                title = resourceRepo.getString(R.string.settings_keep_screen_on),
+                subtitle = "",
+                isChecked = prefsInteractor.getKeepScreenOn(),
+                bottomSpaceIsVisible = true,
+                dividerIsVisible = true,
+            )
+
             val firstDayOfWeekViewData = loadFirstDayOfWeekViewData()
             result += SettingsSpinnerViewData(
                 block = SettingsBlock.AdditionalFirstDayOfWeek,
@@ -102,17 +109,6 @@ class SettingsAdditionalViewDataInteractor @Inject constructor(
                 selectedPosition = firstDayOfWeekViewData.selectedPosition,
                 processSameItemSelected = false,
             )
-
-            val repeatButtonViewData = loadRepeatButtonViewData()
-            result += SettingsSpinnerViewData(
-                block = SettingsBlock.AdditionalRepeatButton,
-                title = resourceRepo.getString(R.string.settings_repeat_button_type),
-                value = repeatButtonViewData.items
-                    .getOrNull(repeatButtonViewData.selectedPosition)?.text.orEmpty(),
-                items = repeatButtonViewData.items,
-                selectedPosition = repeatButtonViewData.selectedPosition,
-                processSameItemSelected = false,
-            ).let(::SettingsSpinnerEvenViewData)
 
             val startOfDayViewData = loadStartOfDayViewData()
             result += SettingsSelectorWithButtonViewData(
@@ -149,6 +145,16 @@ class SettingsAdditionalViewDataInteractor @Inject constructor(
                 subtitle = "",
                 isChecked = prefsInteractor.getAutomatedTrackingSendEvents(),
                 topSpaceIsVisible = false,
+            )
+            result += SettingsTextViewData(
+                block = SettingsBlock.AdditionalDataEdit,
+                title = resourceRepo.getString(R.string.settings_data_edit),
+                subtitle = "",
+            )
+            result += SettingsTextViewData(
+                block = SettingsBlock.AdditionalComplexRules,
+                title = resourceRepo.getString(R.string.settings_complex_rules),
+                subtitle = "",
                 dividerIsVisible = false,
             )
         }
@@ -169,11 +175,6 @@ class SettingsAdditionalViewDataInteractor @Inject constructor(
     private suspend fun loadFirstDayOfWeekViewData(): FirstDayOfWeekViewData {
         return prefsInteractor.getFirstDayOfWeek()
             .let(settingsMapper::toFirstDayOfWeekViewData)
-    }
-
-    private suspend fun loadRepeatButtonViewData(): RepeatButtonViewData {
-        return prefsInteractor.getRepeatButtonType()
-            .let(settingsMapper::toRepeatButtonViewData)
     }
 
     private suspend fun loadStartOfDayViewData(): SettingsStartOfDayViewData {

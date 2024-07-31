@@ -167,8 +167,10 @@ class ChangeRecordTagViewModel @Inject constructor(
             tag = TYPE_SELECTION_TAG,
             title = resourceRepo.getString(R.string.change_record_message_choose_type),
             subtitle = "",
+            type = TypesSelectionDialogParams.Type.Activity,
             selectedTypeIds = listOf(newIconColorSource),
             isMultiSelectAvailable = false,
+            idsShouldBeVisible = listOf(newIconColorSource),
         ).let(router::navigate)
     }
 

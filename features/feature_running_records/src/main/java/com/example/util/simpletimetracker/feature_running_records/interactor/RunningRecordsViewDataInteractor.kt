@@ -4,7 +4,6 @@ import com.example.util.simpletimetracker.core.interactor.ActivityFilterViewData
 import com.example.util.simpletimetracker.core.interactor.FilterGoalsByDayOfWeekInteractor
 import com.example.util.simpletimetracker.core.interactor.GetCurrentRecordsDurationInteractor
 import com.example.util.simpletimetracker.core.interactor.GetRunningRecordViewDataMediator
-import com.example.util.simpletimetracker.core.interactor.RecordRepeatInteractor
 import com.example.util.simpletimetracker.core.mapper.RecordTypeViewDataMapper
 import com.example.util.simpletimetracker.domain.interactor.PrefsInteractor
 import com.example.util.simpletimetracker.domain.interactor.RecordTagInteractor
@@ -23,7 +22,6 @@ class RunningRecordsViewDataInteractor @Inject constructor(
     private val recordTypeInteractor: RecordTypeInteractor,
     private val recordTagInteractor: RecordTagInteractor,
     private val recordTypeGoalInteractor: RecordTypeGoalInteractor,
-    private val recordRepeatInteractor: RecordRepeatInteractor,
     private val runningRecordInteractor: RunningRecordInteractor,
     private val activityFilterViewDataInteractor: ActivityFilterViewDataInteractor,
     private val mapper: RunningRecordsViewDataMapper,
@@ -46,7 +44,9 @@ class RunningRecordsViewDataInteractor @Inject constructor(
         val useProportionalMinutes = prefsInteractor.getUseProportionalMinutes()
         val showFirstEnterHint = recordTypes.filterNot(RecordType::hidden).isEmpty()
         val showDefaultTypesButton = !prefsInteractor.getDefaultTypesHidden()
-        val showRepeatButton = recordRepeatInteractor.shouldShowButton()
+        val showPomodoroButton = prefsInteractor.getEnablePomodoroMode()
+        val showRepeatButton = prefsInteractor.getEnableRepeatButton()
+        val isPomodoroStarted = prefsInteractor.getPomodoroModeStartedTimestampMs() != 0L
         val goals = filterGoalsByDayOfWeekInteractor
             .execute(recordTypeGoalInteractor.getAllTypeGoals())
             .groupBy { it.idData.value }
@@ -125,6 +125,13 @@ class RunningRecordsViewDataInteractor @Inject constructor(
                         recordTypeViewDataMapper.mapToRepeatItem(
                             numberOfCards = numberOfCards,
                             isDarkTheme = isDarkTheme,
+                        ).let(::add)
+                    }
+                    if (showPomodoroButton) {
+                        recordTypeViewDataMapper.mapToPomodoroItem(
+                            numberOfCards = numberOfCards,
+                            isDarkTheme = isDarkTheme,
+                            isPomodoroStarted = isPomodoroStarted,
                         ).let(::add)
                     }
                     recordTypeViewDataMapper.mapToAddItem(
